@@ -1,17 +1,33 @@
 package com.example.photoviewer;
 
+import com.example.photoviewer.adapter.PhotoViewerAdapter;
+
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.GridView;
 
 public class MainActivity extends Activity {
 
+	GridView mPhotoWall;
+	PhotoViewerAdapter adapter;
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
+		
+		 mPhotoWall = (GridView) findViewById(R.id.photo_wall);  
+	        adapter = new PhotoViewerAdapter(this, 0, ImageSet.imageThumUrls, mPhotoWall);  
+	        mPhotoWall.setAdapter(adapter);  
 	}
+	
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		
+		adapter.cancelAllTasks();
+	};
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
