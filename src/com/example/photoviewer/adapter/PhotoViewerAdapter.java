@@ -1,5 +1,7 @@
 package com.example.photoviewer.adapter;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -239,13 +241,31 @@ public class PhotoViewerAdapter extends ArrayAdapter<String> implements
 			try {
 				URL url = new URL(imageUrl);
 				con = (HttpURLConnection) url.openConnection();
-				con.setConnectTimeout(5 * 1000);
-				con.setReadTimeout(10 * 1000);
-
+				con.setConnectTimeout(50 * 1000);
+				con.setReadTimeout(100 * 1000);
+				con.setDoInput(true);
+				con.setDoOutput(true);
 				BitmapFactory.Options options = new BitmapFactory.Options();
 				options.inJustDecodeBounds = true;
-				BitmapFactory.decodeStream(con.getInputStream(), null, options);
-                bitmap = ScaleBitmap(con.getInputStream(), imageView.getWidth(), imageView.getHeight(), options);
+				InputStream inputImageStream = con.getInputStream();
+				
+				
+				ByteArrayOutputStream baosArrayInputStream = new ByteArrayOutputStream();
+				byte[] buffer = new byte[1024];
+				int len = -1;
+				while ((len = inputImageStream.read(buffer)) > -1) {
+					baosArrayInputStream.write(buffer, 0, len);
+				}
+				baosArrayInputStream.flush();
+				
+				inputImageStream = new ByteArrayInputStream(baosArrayInputStream.toByteArray());
+				BitmapFactory.decodeStream(inputImageStream, null, options);
+				inputImageStream = new ByteArrayInputStream(baosArrayInputStream.toByteArray());
+                bitmap = ScaleBitmap(inputImageStream, imageView.getWidth(), imageView.getHeight(), options);
+                baosArrayInputStream.close();
+                baosArrayInputStream = null;
+                inputImageStream.close();
+                inputImageStream = null;
 			} catch (Exception e) {
 				// TODO: handle exception
 				e.printStackTrace();
@@ -263,16 +283,18 @@ public class PhotoViewerAdapter extends ArrayAdapter<String> implements
 				int imageDestWidth, int imageDestHeight,
 				BitmapFactory.Options options) {
 
+			int i = mPhotowall.getWidth();
+			int j = mPhotowall.getHeight();
 			int imageSrcWidth = options.outWidth;
 			int imageSrcHeight = options.outHeight;
 			int inSampleSize = 1;
 			if (imageSrcHeight > imageDestHeight
-					|| imageSrcWidth > imageSrcWidth) {
+					|| imageSrcWidth > imageDestWidth) {
 				// 计算出实际宽高和目标宽高的比率
 				final int heightRatio = Math.round((float) imageSrcHeight
 						/ (float) imageDestHeight);
 				final int widthRatio = Math.round((float) imageSrcWidth
-						/ (float) imageSrcWidth);
+						/ (float) imageDestWidth);
 				// 选择宽和高中最小的比率作为inSampleSize的值，这样可以保证最终图片的宽和高
 				// 一定都会大于等于目标的宽和高。
 				inSampleSize = heightRatio < widthRatio ? heightRatio
